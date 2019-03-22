@@ -131,15 +131,19 @@ impl Notify<Connection> for Follow {
     type Error = Error;
 
     fn notify(&self, conn: &Connection) -> Result<()> {
-        Notification::insert(
-            conn,
-            NewNotification {
-                kind: notification_kind::FOLLOW.to_string(),
-                object_id: self.id,
-                user_id: self.following_id,
-            },
-        )
-        .map(|_| ())
+        if User::get(conn, self.following_id).as_ref().map(User::is_local).unwrap_or(false) {
+            Notification::insert(
+                conn,
+                NewNotification {
+                    kind: notification_kind::FOLLOW.to_string(),
+                    object_id: self.id,
+                    user_id: self.following_id,
+                },
+            )
+            .map(|_| ())
+        } else {
+            Ok(())
+        }
     }
 }
 

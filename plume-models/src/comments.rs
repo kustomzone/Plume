@@ -14,7 +14,7 @@ use instance::Instance;
 use mentions::Mention;
 use notifications::*;
 use plume_common::activity_pub::{
-    inbox::{Deletable, FromActivity, Notify},
+    inbox::{Deletable, FromActivity, Notify, WithInbox},
     Id, IntoId, PUBLIC_VISIBILTY,
 };
 use plume_common::utils;
@@ -273,14 +273,16 @@ impl Notify<Connection> for Comment {
 
     fn notify(&self, conn: &Connection) -> Result<()> {
         for author in self.get_post(conn)?.get_authors(conn)? {
-            Notification::insert(
-                conn,
-                NewNotification {
-                    kind: notification_kind::COMMENT.to_string(),
-                    object_id: self.id,
-                    user_id: author.id,
-                },
-            )?;
+            if author.is_local() {
+                Notification::insert(
+                    conn,
+                    NewNotification {
+                        kind: notification_kind::COMMENT.to_string(),
+                        object_id: self.id,
+                        user_id: author.id,
+                    },
+                )?;
+            }
         }
         Ok(())
     }
